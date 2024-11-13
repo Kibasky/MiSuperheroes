@@ -1,10 +1,14 @@
 package com.example.misuperheroes.activities
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.misuperheroes.R
 import com.example.misuperheroes.adapters.SuperheroAdapter
@@ -25,14 +29,31 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        adapter = SuperheroAdapter(superheroList)
+        // esta estructura arregla la parte superior del layout
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+
+        adapter = SuperheroAdapter(superheroList) { position ->
+            val superhero = superheroList[position]
+            navigateToDetail(superhero)
+        }
         binding.recyclerView.adapter = adapter
         binding.recyclerView.layoutManager = GridLayoutManager(this, 2)
 
+    }
+
+    private fun navigateToDetail(superhero: Superhero) {
+        val intent = Intent(this, DetailActivity::class.java)
+        intent.putExtra("SUPERHERO_ID", superhero.id)
+        startActivity(intent)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -64,7 +85,8 @@ class MainActivity : AppCompatActivity() {
 
                 CoroutineScope(Dispatchers.Main).launch {
                     if (result.response == "success") {
-                        adapter.updateItems(result.results)
+                        superheroList = result.results
+                        adapter.updateItems(superheroList)
                     } else {
                         // TODO: Mostrar mensaje de que no se ha encontrado nada
                     }
